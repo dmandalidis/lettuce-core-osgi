@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dmandalidis/lettuce-core-osgi.svg)](https://travis-ci.org/dmandalidis/lettuce-core-osgi)
+[![Build Status](https://travis-ci.com/dmandalidis/lettuce-core-osgi.svg)](https://travis-ci.com/dmandalidis/lettuce-core-osgi)
 [![Maven Central](https://img.shields.io/maven-central/v/org.mandas/lettuce-core-osgi.svg)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.mandas%22%20lettuce-core-osgi)
 
 This project is a fork of [Lettuce](https://github.com/lettuce-io/lettuce-core) adding only OSGi information in the

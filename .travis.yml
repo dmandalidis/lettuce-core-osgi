@@ -1,63 +1,30 @@
 dist: xenial
-
-os: linux
-
+notifications:
+  email: false
 language: java
-
-jobs:
-  include:
-    - jdk: openjdk8
-      env:
-        - JDK='OpenJDK 8'
-        - REDIS=5.0
-    - jdk: openjdk8
-      env:
-        - JDK='OpenJDK 8'
-        - PROFILE=jmh
-    - jdk: openjdk8
-      env:
-        - JDK='OpenJDK 8'
-        - REDIS=5.0
-    - jdk: openjdk8
-      env:
-        - JDK='OpenJDK 8'
-        - REDIS=4.0
-    - jdk: openjdk8
-      env:
-        - JDK='OpenJDK 8'
-        - REDIS=3.2
-    - env: JDK='OpenJDK 12'
-      before_install: wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh -f 12
-    - env: JDK='OpenJDK 13'
-      before_install: wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh -f 13
-    - env: JDK='OpenJDK 14'
-      before_install: wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh -f 14
-    - env: JDK='OpenJDK EA'
-      before_install: wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh
-  allow_failures:
-    - env: JDK='OpenJDK EA'
-
-install:
-  - if [[ ! -f downloads/stunnel-5.56.tar.gz ]]; then wget -O downloads/stunnel-5.56.tar.gz ftp://ftp.stunnel.org/stunnel/archive/5.x/stunnel-5.56.tar.gz; fi
-  - if [[ ! -f ./stunnel-5.56/configure ]]; then tar -xzf downloads/stunnel-5.56.tar.gz; fi
-  - if [[ ! -f ./stunnel-5.56/src/stunnel ]]; then cd ./stunnel-5.56; ./configure; make; cd ..; fi
-  - export PATH="$PATH:$(pwd)/stunnel-5.56/src"
-  - make prepare ssl-keys
-
-script: make test-coverage PROFILE=${PROFILE:-ci}
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
-
+jdk:
+- openjdk8
+install: true
+before_install:
+- if [ $TRAVIS_PULL_REQUEST == "false" ]; then openssl aes-256-cbc -K $encrypted_d8011ea95b1b_key
+  -iv $encrypted_d8011ea95b1b_iv -in secret.asc.enc -out secret.asc -d; fi
+- if [ $TRAVIS_PULL_REQUEST == "false" ]; then gpg --batch --import secret.asc; fi
+script:
+- if [ $TRAVIS_PULL_REQUEST == "false" -a x$UPLOAD_SONATYPE == x1 ]; then mvn --settings
+  custom-settings.xml -Psonatype-oss-release clean deploy -DskipTests; fi
+- if [ $TRAVIS_PULL_REQUEST != "false" -o x$UPLOAD_SONATYPE != x1 ]; then mvn --settings
+  custom-settings.xml clean verify -DskipTests; fi
+branches:
+  only:
+  - "/.*\\.RELEASE-enhanced$/"
 cache:
   directories:
-    - '$HOME/.m2/repository'
-    - '$TRAVIS_BUILD_DIR/downloads'
-    - '$TRAVIS_BUILD_DIR/stunnel-5.56'
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/7c2a962829d225c47a31
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
+  - "$HOME/.m2"
+env:
+  matrix:
+  - UPLOAD_SONATYPE=1 JDK='OpenJDK 8'
+  global:
+  - secure: pnNUocNufxpK6WOXAcGehSk97cvJThr65E7pGi2w4g4M6fKXe/LkjjaRxIuZz4YrTPdQj4V2UIw4+LnPGfYci0UtE4pDSANiSqkHbJ7slCHdwy9gcmP/r6WUiaVhetg2EutXfwiI80ck405wnGPEtqYhcCQK12D2neW9gzrwgPSPenW2HItSyqqJqDjV0LF8x4VFWJmU2zmRIgF8T58AtH+H5iuRY+JMSYaVDt1XGkVMtBv17Bx3nL67LN6RATMzM71Fme8Zv6+/8tgGA9XUton3z1rtNmaTjbV3Zs1yQF4xjnztu5DBGiTzlyEESE+TF7aBvsgRBJyEG1z351c55Cm1D6L4e3GbI3J6NvISmmpu+lBZY7H/vS/Y4CAxLGAPrHY0ra9c2IBnwcHQD50ymh/1WL4LnfoK207fWzISVQdxs0DkNs+EddQENOZoN9Ad+NCcLQb89+gtvVToczLWOiwLg/TssrTb8x1/HgvzxHfI465AGNaOxY7TK/JrpVdTCY44NJ5tMQNvVXaQI7L0r+W9xH2r2RzXS6Y3xUaPBBrcWD9z5FOhfWP4qY8LSqv2pw0Vt1WF7Aiz1Gg+GNjqZVTxg4AaDDUxqHM5vL1aVMSQCzsDxek41AMuZjsP/zIJMSCwYu5P5joyDQd6hKbk5xpJRpwPsGRAB9Sf4bLTzZY=
+  - secure: CKJhU7wW93x0oax7yA1+Fdd/Y/x4tVopDonSvd74pTVFERukcTpUak9gqo4/RVrtLPsqKIYxZNlkE+p1OIos7UJ2ZAClGypcX+x1r7Jo/ifiGD/n0m9SkvNEqkBuqFdbczyhVqrfYv2x/ET3y+G0w/gzlAf+h7SiRhG453HduPA9Ud1cG2stPUIPId48mz6eYGAh9wZMcQH3r9jY4Mj3/p1nzje8QP5b5uwUHpO16JC8a0zxLACR6ZxLljDibbZd/2UkUPrtZb4WZqCM4zbq/oofFjPxA0RU1o0RQQpPW2YDUcPJU9KOVGRSnwXn7guYHFMGJJ/RiEH+8GiZBnXn2JBxNBuDOWqpnAJnsmQdb+E162fehT9PdsyDLBWm/8AbjtpU8yMgjMy15xY1yOXvwDjSNq4N/8SAwh3Y7xIX8xZZJOwLswYXdNAhRcpmxMDVQMIHv1NAIpLwiSmrcSFv7zDE7PzNfKxAezDvrU0m/thmSngQuv9O8l6CV+baBopi2JJpjrf/IPXn6oaZeDYhCp/R1crQiaZJeHF89t5FKzplfxTpswNbY+NcFSCmyiY9Ksjyag+lG84rqWDTO8l/ey2fpw+7nQvPlrhjqd4Y04tPaqxaHYX9BHBLyKlUaExbChyWC3eAqNeENF+7nvZ5/BkbUsdf5RXLZx2/psBQYsc=
+  - secure: DVDltszHyengbHSDnMGjX/UqjQWGvPKJzlPitJCa2gS9PmpNHrWCEzjZHg3LjCo5D+tSwtspKSByukBJe3bSyjeYj0/Is3feN7K6VJtr2Go0JE57uLZV+0tGI/501dxH42E3qG5RyfaeJhSycrl45Is1C+ro58kRIrNb32bdzL4JYY56kOrL2uTeKa3rlYqBixQ2LyU6L6zwzd4eXDYiTR0xsg8dtOsecm5ivt7HNxhQ2f3SWajrOsXYpEVfhYNaEFhkkSpu9VSmiLFmxX7o9JwRysw4Yo77b/XVXEV07hkrK+QQYKoNjdb7xrmhFpxTo+JR7KlO1CvNobpNQC7wX2V+kczfKdQji/mvwIZ52VwKjUiyrEgXqmMeGwRT5xl8ATMIbimIinv3P9GKKFjK3o5JQqEFWtVG4azIXTNgf0Vw/fr3scpEcCmJ6h3I+VErpmr4j8JwqHKrz78SP33zOFL0vYa1h6nbofis3Z+duyJiGD7L+1vRYGTlPp240lIs7MEdvz/HOXazzlYoGlgBzx5rkmBXjjPC9UE2rNwhzd97gUOdxlbMDcBqx1AVnHfkOepKM6qis8TKgFK8Au8dj0k1yAUrs0MWIKYxlV4sxy6U1rVqyozi0dKq7vTNs4retzl6xQ/S4hRtNK5TQdxJtuuzhdbRUlwGuMfqP3airlA=
+  - secure: CGYZhJ6GsizhnTRnI1mJTvsKZG7kiiELjba4NnNs1PWq8MM8hWjq5g4sloC0ImjrrWj/Jc4NZ3KaQWob2mhGL8Wz8ltE2qJVS6iQiPmDU4yymLIdNEOr1Jv5CI2HI/xJjLV5Vmgm8FDTsvdl6RsBk4zIyn8FcXxkxgS8do31fkMdX5dnMqFZWPpg/eg5NB6dZ0vFc6LABQul+VUHz4kkanGzsZh4Mid+sdjueEtfbXbNd/Hw0GPz/QcI5gwJ64CvRhr2mt3eeB12hAh7wRg2TsH/OIkNp29BEn575DWImAxCaef4bZaeRIU5KnFslzapJtf0XIwDhZWhEYd1rmFn3Lx3IS4bKBlx24WQJmVlwGPM9C/M+Y4JrjC0p0t5mhkWNT0MLVLQSdaDZCsdF8vfWQIq7NvE+8HMDrCAtmt6p+T1xD+H6s9e91o8Btlz+gazP6kDeFExTkLVOH3wnz+pSn2mrZYOIW421wD0mlQAW8yPq4G3pghoy7vPLZmFY0MMWv2T076P/+XzNu3YEv916qx4jazeSdeqF2quriqZK8pcXCPiqUlLTHzdmC18kGTai4Z3OmVGZNrWE5G8pACI52gTgsLgMejMIjtHDy4XbLZSxeN3+3I1djYpUzq7iJtPDYWGDBm2+IahDqN9doDo1DGqwbIJUwMnCGMO4zfKDEg=
