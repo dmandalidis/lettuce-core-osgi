@@ -1,23 +1,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.lettuce</groupId>
-    <artifactId>lettuce-core</artifactId>
+    <groupId>org.mandas</groupId>
+    <artifactId>lettuce-core-osgi</artifactId>
     <version>6.1.2.RELEASE</version>
     <packaging>jar</packaging>
 
-    <name>Lettuce</name>
+    <name>Lettuce (OSGi-enabled)</name>
 
     <description>Advanced and thread-safe Java Redis client for synchronous, asynchronous, and
         reactive usage. Supports Cluster, Sentinel, Pipelining, Auto-Reconnect, Codecs
         and much more.
     </description>
 
-    <url>http://github.com/lettuce-io/lettuce-core</url>
+    <url>http://github.com/dmandalidis/lettuce-core-osgi</url>
 
     <organization>
-        <name>lettuce.io</name>
-        <url>https://lettuce.io</url>
+        <name>mandas.org</name>
+        <url>https://github.com/dmandalidis</url>
     </organization>
 
     <licenses>
@@ -28,14 +28,9 @@
         </license>
     </licenses>
 
-    <ciManagement>
-        <system>Travis CI</system>
-        <url>https://travis-ci.com/lettuce-io/lettuce-core</url>
-    </ciManagement>
-
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/lettuce-io/lettuce-core/issues</url>
+        <url>https://github.com/dmandalidis/lettuce-core-osgi/issues</url>
     </issueManagement>
 
     <developers>
@@ -46,6 +41,10 @@
         <developer>
             <id>will</id>
             <name>Will Glozer</name>
+        </developer>
+        <developer>
+            <id>dmandalidis</id>
+            <name>Dimitris Mandalidis</name>
         </developer>
     </developers>
 
@@ -84,11 +83,11 @@
     </properties>
 
     <scm>
-        <connection>scm:git:https://github.com/lettuce-io/lettuce-core.git</connection>
-        <developerConnection>scm:git:https://github.com/lettuce-io/lettuce-core.git</developerConnection>
-        <url>http://github.com/lettuce-io/lettuce-core</url>
-      <tag>6.1.2.RELEASE</tag>
-  </scm>
+        <connection>scm:git:https://github.com/dmandalidis/lettuce-core-osgi.git</connection>
+        <developerConnection>scm:git:https://github.com/dmandalids/lettuce-core-osgi.git</developerConnection>
+        <url>http://github.com/dmandalidis/lettuce-core-osgi</url>
+        <tag>6.1.2.RELEASE</tag>
+    </scm>
 
     <distributionManagement>
         <snapshotRepository>
