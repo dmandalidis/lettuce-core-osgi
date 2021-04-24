@@ -1,61 +1,35 @@
 dist: xenial
-
-os: linux
-
+notifications:
+  email: false
 language: java
-
-jobs:
-  include:
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - REDIS=unstable
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - PROFILE=jmh
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - REDIS=6.0
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - REDIS=5.0
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - REDIS=4.0
-    - jdk: openjdk17
-      env:
-        - JDK='OpenJDK 17'
-        - REDIS=3.2
-    - env: JDK='OpenJDK EA'
-      before_install: wget https://github.com/sormuras/bach/raw/master/install-jdk.sh && . ./install-jdk.sh
-  allow_failures:
-    - env: JDK='OpenJDK EA'
-
-install:
-  - if [[ ! -f downloads/stunnel-5.60.tar.gz ]]; then wget -O downloads/stunnel-5.60.tar.gz https://www.stunnel.org/downloads/stunnel-5.60.tar.gz; fi
-  - if [[ ! -f ./stunnel-5.60/configure ]]; then tar -xzf downloads/stunnel-5.60.tar.gz; fi
-  - if [[ ! -f ./stunnel-5.60/src/stunnel ]]; then cd ./stunnel-5.60; ./configure; make; cd ..; fi
-  - export PATH="$PATH:$(pwd)/stunnel-5.60/src"
-  - make prepare ssl-keys
-
-script: make test-coverage PROFILE=${PROFILE:-ci}
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
-
+jdk:
+- openjdk15
+install: true
+before_install:
+- if [ $TRAVIS_PULL_REQUEST == "false" ]; then openssl aes-256-cbc -K $encrypted_d8011ea95b1b_key
+  -iv $encrypted_d8011ea95b1b_iv -in secret.asc.enc -out secret.asc -d; fi
+- if [ $TRAVIS_PULL_REQUEST == "false" ]; then gpg --batch --import secret.asc; fi
+script:
+- if [ $TRAVIS_PULL_REQUEST == "false" -a x$UPLOAD_SONATYPE == x1 ]; then mvn --settings
+  custom-settings.xml -Psonatype-oss-release clean deploy -DskipTests; fi
+- if [ $TRAVIS_PULL_REQUEST != "false" -o x$UPLOAD_SONATYPE != x1 ]; then mvn --settings
+  custom-settings.xml clean verify -DskipTests; fi
+branches:
+  only:
+  - main
+  - "/.*\\.RELEASE-enhanced$/"
 cache:
   directories:
-    - '$HOME/.m2/repository'
-    - 'downloads'
-    - 'stunnel-5.60'
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/7c2a962829d225c47a31
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
+  - "$HOME/.m2"
+env:
+  matrix:
+  - UPLOAD_SONATYPE=1 JDK='OpenJDK 15'
+  global:
+  - secure: pnNUocNufxpK6WOXAcGehSk97cvJThr65E7pGi2w4g4M6fKXe/LkjjaRxIuZz4YrTPdQj4V2UIw4+LnPGfYci0UtE4pDSANiSqkHbJ7slCHdwy9gcmP/r6WUiaVhetg2EutXfwiI80ck405wnGPEtqYhcCQK12D2neW9gzrwgPSPenW2HItSyqqJqDjV0LF8x4VFWJmU2zmRIgF8T58AtH+H5iuRY+JMSYaVDt1XGkVMtBv17Bx3nL67LN6RATMzM71Fme8Zv6+/8tgGA9XUton3z1rtNmaTjbV3Zs1yQF4xjnztu5DBGiTzlyEESE+TF7aBvsgRBJyEG1z351c55Cm1D6L4e3GbI3J6NvISmmpu+lBZY7H/vS/Y4CAxLGAPrHY0ra9c2IBnwcHQD50ymh/1WL4LnfoK207fWzISVQdxs0DkNs+EddQENOZoN9Ad+NCcLQb89+gtvVToczLWOiwLg/TssrTb8x1/HgvzxHfI465AGNaOxY7TK/JrpVdTCY44NJ5tMQNvVXaQI7L0r+W9xH2r2RzXS6Y3xUaPBBrcWD9z5FOhfWP4qY8LSqv2pw0Vt1WF7Aiz1Gg+GNjqZVTxg4AaDDUxqHM5vL1aVMSQCzsDxek41AMuZjsP/zIJMSCwYu5P5joyDQd6hKbk5xpJRpwPsGRAB9Sf4bLTzZY=
+  - secure: CKJhU7wW93x0oax7yA1+Fdd/Y/x4tVopDonSvd74pTVFERukcTpUak9gqo4/RVrtLPsqKIYxZNlkE+p1OIos7UJ2ZAClGypcX+x1r7Jo/ifiGD/n0m9SkvNEqkBuqFdbczyhVqrfYv2x/ET3y+G0w/gzlAf+h7SiRhG453HduPA9Ud1cG2stPUIPId48mz6eYGAh9wZMcQH3r9jY4Mj3/p1nzje8QP5b5uwUHpO16JC8a0zxLACR6ZxLljDibbZd/2UkUPrtZb4WZqCM4zbq/oofFjPxA0RU1o0RQQpPW2YDUcPJU9KOVGRSnwXn7guYHFMGJJ/RiEH+8GiZBnXn2JBxNBuDOWqpnAJnsmQdb+E162fehT9PdsyDLBWm/8AbjtpU8yMgjMy15xY1yOXvwDjSNq4N/8SAwh3Y7xIX8xZZJOwLswYXdNAhRcpmxMDVQMIHv1NAIpLwiSmrcSFv7zDE7PzNfKxAezDvrU0m/thmSngQuv9O8l6CV+baBopi2JJpjrf/IPXn6oaZeDYhCp/R1crQiaZJeHF89t5FKzplfxTpswNbY+NcFSCmyiY9Ksjyag+lG84rqWDTO8l/ey2fpw+7nQvPlrhjqd4Y04tPaqxaHYX9BHBLyKlUaExbChyWC3eAqNeENF+7nvZ5/BkbUsdf5RXLZx2/psBQYsc=
+  - secure: hCdnoNZzn5wbgXH0h5HXTNk7w0ZbhHJA3jccTczytMvhqJe/NtKg0hosi247flJ4aB3eG8+8iHHdmbHIMilKYfna8Y4VaBI2TVPmCvVDISycYp1JV3EdPfwAfAhOtBgLYgkhZyVUk1OyE2JiRclINLnQqhanUxeyDOCvK1Dv7O78r+KCuynQ/csi27F91rIEo2TcOt0F/4M0ZU7BCToRvV4gZWsVnYqmvoksN2AHtQ/hnv6ynN0N1WFIyAUoDl3FKqHhK1ig68FAvqYQ3yrmX5Fbi3nR6ntnT+sxy3rGN1YXK2nauZElbse8bycpZhtDD137n+CjQ/zKNLFl91cjkmIAbEPvxgSmMzQuhK5FUCokJ0uiuDyFNKPDzK1ISS7qXIGdJ9S0SxkpEO8hxNkP86uM8BKVbd0k2GzeFvu4Z6BzGP0KIHveVXgPg+DVH/nvNMYS28olQI1rvaSZZ3IscVfDK13pkVFaqryOVn27/YJBmOIoB+gMj68/JD7sGHIJCT6KbPoBL/3jXWMlr38G6AKyKS2avaOB3+jl7Pslymh4PPvhXOqtfDhOkGl2FYp4o79K9fJIkC150S1ZX6xFZUVGXGSkhjIStQ5RvomqXukwlJNC/fj3vF92GReiXVQ/RFn7c1JzfRd2ICpCZeH83zfW+oZUVQcX0cg+EFgbmUw=
+  - secure: pE//b1abC9P38Kv7Ycy0NTejdmIREzH0feIBNTHNt95ZPWFYxaKuWkLPnEH/O+Yfu60q8KSe7XaelH5Cgns6GEE6xz8wx1oG5RXViGehGFsSR0oweD3Md6whlocGdMQj+RdeMnSOIKU0ChnhLtu1O9htivaRHjLncaI34Ke4ucSQ6w1jQD0+K02GLj+Yp6Tu/Lme9KlXx5ZN+lhFo+QdTI7cDLebdnyOoLVesI4A6f/htv88xb200d/Do+OCyvezL/cOX9b/tNZdCB/KeI3Tf8Z0obwsRa1ySU+1Qe14/0dpbEfV7JvWVTuvPKj9YyLENZAWRnmfw/kBRX5faDM3nz4/9xHBuJeN+x0vDoa02zDuKWSMyBSlE7O8HQ2aCIlVeWuJDjQ/9KyYnEuZjPxqNsogdsYe7voy/7ofhmdVvkfv3eN1n7aJwxUd8u06izIBozJniy/QEdJ6vmLPgQ8RmvyrhbhlRTAGMAt+og3qOloTXv4M+ysEBs/BxtDeR75/524p93FGjNH7Y9fZzYyFtdXzAT8LBinx8ahHZav8GLVM2QtrE/89CeyMRu/WgqExKOEJxfi6kfyDR4DYzJM70+RIvz/TINCElkURlRHqsZT/WqYZaMuaU8oBgtoHukeEViBGh+eXpYq0b80zHvoWCZ1LsQfLiofKmtC7YhmIHQM=
+  - secure: irc65Js8brEj/7m6BV9bbUANGWD6WDWDO8fM15URT+YEMHmbZjAKgvEbmT2n+DNstEZxwkIaCHYE61WzW4OHXm9qysrBLDkryPMrJF2vLi14iUg2juDQ+IizjkzHaaAiRn9ytgc2A/SbBh65rdtB/Z1LAs9OIwtWROH5nhKMnefAnDRzQhuw+VKdNB3yV8bx8SYg6Ii9lCjJiPM6xK76ud+/RM9OTM1cKFikjmBz3hp6ucSZ6rCo8aSzXj0hFIQ0bJM59WK2c9QGQURjtrfF/4O4DzjeXREzXrqXq95KM4PoDt7hmbuVFgfmfwxg5aEDD1NsWqv9z4D/npChIUrMVzd9yOFQHdIXFh6FElfGv6m/oW6SIGM3VsXfbqBwZruQrsdP70j61GJOMb48PBVNsx8kdI6eOJk2uaBb24OS73kwY8vBwUz0s+jsZJ6PpxBI1P/7dYp7vIeZhlkVK/oGxjO/8xbALf7Yb4aFgQoPmhHOVMj+G7+fYTCbkd8iB2mrS7Omf8I5GgEfiejOzGCxn9tZueLtsvuZawsUUXjSk8pWGikVVCaf4hX28ybu+FJq6W+wkgYTVTFYXtcvIm6NbFxDifodTlkqM9MHpVCtmOVgrht+EJoy1C4FVFzZJJmW2gWocY3z8OHbspAf7TWfr7m5Y3NwO1YDhPiRZK3B1Zw=
+  - secure: ieNu7N4OKgXAM6uXjo/YY0kA9IWwBidz4s1XONHJpTfEslCM0DHzgi/R/cgsVbw0BMNs/86Wlph9+n0g/aDjLWw9YPAu/W9folVzRf8BhC8EXX5eQvczBkjHjlRXJ8sC/P2pscmYwV0HryX5oNZUc/czFmMVMM7+Fd6JdaugyjpC8ePwINBeOXnDcD/JGmCIZ9DoORxz77tBzAWeiOk8zCX3mXLIg4A49tiYMijDj55XCnMIfzV+fUiEt0oCchPHuRiiR/gGKfGs4Xx+lazEMPtNRl7TsbHWhbGvbtlzFrtaNMh2L0hOLdF8F2b/4n2bovoJ9DAv7MQo3tv0PbxkbXlt9PNenY61QA3OgPCvhSrX/q0jeq8T58DnigmwyZBRUpJp6lN+sw2+3vJcZCuojpefP4GxtCwDdzXURXN/Fou00KnRptp5oovb0cNmZYocqwNgQnLtPr9RjnY3EZ8HsjcKDAMoZ98mw/9YJ5ybDyiocATWnVluQhNDGC1V0qTOQDvictAA5AXxwLErq7oepK8gNWv7TrwmPJ5kKuuzCThSTWbMX7f6xrbCEX9Cw9/e08KlG/WwoHVyeOOeiJ+jYJeijZPzS7P5gpCSMdNX+dydWmb9WOc/2fkPvCpZiCtmPHCGiNY1KWdAAxM5zSttKnX4CcsdmYMzj4OKKTwZMRo=
+  - secure: fWM+MB0Iwv97E5ZCAnouwLRAancRUUdkQ6hPQnYDjsJbot9i8SpzChuRUPUshVvemytGBJUUegbD0yuX5RpKm8JfllFXaeZQGZEf2/i7TCVbDkZnmoJSFM+zw/tgKgFt1OXRLx7AKbF9nfYc5R1UQ+UMtap8HJWkThfcv6PvFydjXocM28qIiepUdc+8TaKCT63rFVPJblr41LGyHo9/z7UxPF41a4cZjBVoQJgToOolnDPttX4bZglfp5RFmM7BUINjySBNlXlcqY7iZ4lFos+b5GN/7ITlwcx4XVq5psrcj2UUHo1D0BN79F7uQRFxjl0+A364xNDSq+juM0Jat8b8JgxSVxTJ2SXWG5BE03K40iPYMmbIG7KBrrUA3MWvAPcmtolH6I7XIsH5/ZFsfsOSDTEsycnOGqCKQN4co4m7KAPVEzVM3ezOmgdKaPBSY11Pxf1QsylRFrYkz2pAkoFOimVGANz2HhABd5Eezjv1YNKZLlldjsiMUYzsQ1WTFaNXsa1vNAh+fDDXunHenLppFTSt1xOSOKxksUKF6+YGHgfr2yfxKmtYFNWiVHA6BoDV+QhqkXp3Q0EKqELuaBsBLgWVdVb0X4tzO0U3mEEWrm88IU94Sq+YqaVlzpMa5NQmREc1nCVmMFI+dlPFT/vyGUv+NiBm+2pD9mCyGlI=
+  - secure: b1X076zU6xpjDeVdaxMyhksQhr3KXdjZzTN1/CAi93qtztRsbBy2Sxo9WgRldGXezfOBbfhD9GLiHu6QOhr7G7HCPsaGyxCu3snGSqK1MOf9jeThnvcSh8EJCI0uCbGTeWN+EPA+HeHDd+3HuTAOTRnV+EzsOMZTtCSnb0/eQTtJa4RhEX9ztraCpav4eADqwAGqtPUzM5XaY6SDD8003p7h13PYWmqyajXexUPhSrSYhkpAJCyoDI4cNRvPeUB6OZEcxBnfsXKHJ9rTbSCkN+Mezbqn7HcJwoH0WszxI68s481Yodxq+xiCLMiy/BkZVoz08TvTkuf7uH+J3nyS67dFtTjojD8M0c7O13ZQTQEAbdu1OaXXDeis9lTsy5g1mhFy9UUTUIaCOTOOVka7+qj0r9p/YS6D8nv9vxuPUlK1bBURaImW1GobT/5rdVjJ5T+/Qu5JxGA5fVvF9UWG+ToFR+8o4Bq01gNs2D9Xf9rSh+WS0X95kdzEDvMc/tE2irGW2ofJhC61j/ZBsHgrwMfIXjYprG4ux1jhQB434s8VqK/vG+cZA/nyyNVvG6LcKJN8S5mvOA5OHka+lgI2I4uAsgSLA7o17QpAdyoV3b43shGKerJEue7HhdeizvY/gZhCmO8w5QNpZGEo9PrKHZTRWNAtkoYaTPOSYQPakoI=
